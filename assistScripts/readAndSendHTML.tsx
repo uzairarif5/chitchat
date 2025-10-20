@@ -12,7 +12,7 @@ export function readAndSendHTML(res: ServerResponse<IncomingMessage>, fileName: 
     if (fileName === "home" || fileName === "room") {
       const avatarContainer = componentsStore.getComponent("avatarContainer");
       data = data.replace("%avatarContainer%", avatarContainer);
-      const wsURL = process.env.PORT ? `wss://chitchat-s6ri.onrender.com:${port}` : `wss://localhost:${port}`; // change protocol depending on whether local or on render.com.
+      const wsURL = process.env.PORT ? `wss://chitchat-s6ri.onrender.com` : `ws://localhost:3333`; // change protocol depending on whether local or on render.com.
       data = data.replace("/*G_SOCKET*/", `g_socket = new WebSocket("${wsURL}");`);
       if (inProduction) componentsStore.setComponent(fileName, data);
     }
