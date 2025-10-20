@@ -1,6 +1,6 @@
 {
   "name": "chitchat",
-  "version": "0.1.3",
+  "version": "1.0.0",
   "description": "gossip or something i dont know",
   "homepage": "https://github.com/uzairarif5/chitchat#readme",
   "bugs": {
@@ -16,8 +16,8 @@
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npx tsx index.ts",
-    "dev": "set \"NODE_ENV=production\" && npx tsx --env-file=.env index.ts"
+    "start": "set \"NODE_ENV=production\" && npx tsx index.ts",
+    "dev": "set \"NODE_ENV=development\" && npx tsx --env-file=.env index.ts"
   },
   "devDependencies": {
     "@types/node": "^24.3.1",

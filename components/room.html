@@ -66,10 +66,6 @@
                   }
                 }
               }
-
-              #editableName:hover{
-                border-color: #000 !important;
-              }
             }
 
             #otherPeoplePicContainer{
@@ -132,15 +128,23 @@
                 height: 26px;
               }
             }
+
+            .selectedListenToYourself{
+              background-color: #080;
+            }
+
+            .selectedMuteYourself{
+              background-color: #B00;
+            }
           }
         }
 
-        button{
+        button, #profilePicUploaderLabel {
           cursor: pointer;
           color: var(--text-color);
           border: black solid 2px;
           background-color: #333;
-          transition: all 0.4s linear;
+          transition: all 0.3s linear;
 
           &:hover, &:focus{
             background-color: #444;
@@ -158,7 +162,10 @@
       </section>
       <section id="midSection"></section>
       <section id="footerSettings">
-        <button title="listen to yourself" id="listenToYourself" type="button" onclick="toggleListenToYourself()">
+        <button title="Mute yourself (shorcut: 'M')" id="muteYourself" type="button" onclick="toggleMuteYourself()">
+          <i class="fa-solid fa-microphone-slash"></i>
+        </button>
+        <button title="listen to yourself (shorcut: 'L')" id="listenToYourself" type="button" onclick="toggleListenToYourself()">
           <i class="fa-solid fa-ear-listen"></i>
         </button>
         <button title="exit" id="exitButton" type="button" onclick="exitRoom()">
@@ -207,7 +214,6 @@
       PASS_OFFER: "PASS_OFFER",
       PASS_ANSWER: "PASS_ANSWER",
       PASS_CANDIDATE: "PASS_CANDIDATE",
-      DELETE_USER: "DELETE_USER",
       DO_STUFF: "DO_STUFF"
     };
 
@@ -243,6 +249,11 @@
         }
       })
       .catch(console.error);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'M' || event.key === 'm') toggleMuteYourself();
+        else if (event.key === 'L' || event.key === 'l') toggleListenToYourself();
+      });
     }
 
     function startSocket(){
@@ -315,6 +326,7 @@
       let curUser = localStorage.getItem("username");
       const editableNameEl = document.getElementById("editableName");
       editableNameEl.value = curUser;
+      editableNameEl.readOnly = true;
       
       //for other users
       fetch("/getAllUsersPic")
@@ -329,22 +341,35 @@
 
     function setOtherUsersDiv(inputData){
       const {username, imgData} = inputData;
-      let elToAdd = template.cloneNode(true);
-      elToAdd.title = username;
-      elToAdd.id = `divFor${username}`;
-      let curCnv = elToAdd.firstElementChild.firstElementChild;
-      let curCtx = curCnv.getContext("2d");
-      let image = new Image();
-      image.onload = () => {
-        if (image.width < image.height) curCnv.width = curCnv.height = image.width;
-        else curCnv.width = curCnv.height = image.height;
-        curCtx.drawImage(image, 0, 0);
-        otherAvatarHolderEl.appendChild(elToAdd);
+      const alreadyExists = g_userStoreSet.has(username);
+      if (alreadyExists) {
+        const userDiv = document.getElementById(`divFor${username}`);
+        const curCnv = userDiv.firstElementChild.firstElementChild;
+        const curCtx = curCnv.getContext("2d");
+        const image = new Image();
+        image.onload = () => {
+          if (image.width < image.height) curCnv.width = curCnv.height = image.width;
+          else curCnv.width = curCnv.height = image.height;
+          curCtx.reset();
+          curCtx.drawImage(image, 0, 0);
+        }
+        image.src = imgData;
       }
-      image.src = imgData;
-
-      // incase user is new
-      if (!g_userStoreSet.has(username)) {
+      else {
+        const elToAdd = template.cloneNode(true);
+        elToAdd.title = username;
+        elToAdd.id = `divFor${username}`;
+        const curCnv = elToAdd.firstElementChild.firstElementChild;
+        const curCtx = curCnv.getContext("2d");
+        const image = new Image();
+        image.onload = () => {
+          if (image.width < image.height) curCnv.width = curCnv.height = image.width;
+          else curCnv.width = curCnv.height = image.height;
+          curCtx.reset();
+          curCtx.drawImage(image, 0, 0);
+          otherAvatarHolderEl.appendChild(elToAdd);
+        }
+        image.src = imgData;
         g_userStoreSet.add(username);
         elToAdd.lastElementChild.innerText = username;
         elToAdd.querySelector("audio").id = `audioFor${username}`;
@@ -356,26 +381,49 @@
       else console.error("Property msg not in jsonData:", jsonData);
     }
 
+    function toggleMuteYourself(){
+      const buttonElement = document.getElementById('muteYourself');
+      if (buttonElement.classList.contains("selectedMuteYourself")) { 
+        buttonElement.classList.remove("selectedMuteYourself");
+        if (g_localStream) g_localStream.getAudioTracks().forEach(track => track.enabled = true);
+      }
+      else {
+        buttonElement.classList.add("selectedMuteYourself");
+        if (g_localStream) g_localStream.getAudioTracks().forEach(track => track.enabled = false);
+      }
+    }
+
     function toggleListenToYourself(){
       const audioElement = document.getElementById('selfAudio');
-      if (audioElement.muted) audioElement.muted = false;
-      else audioElement.muted = true;
+      const buttonElement = document.getElementById('listenToYourself');
+      if (audioElement.muted) {  
+        audioElement.muted = false;
+        buttonElement.classList.add("selectedListenToYourself");
+      }
+      else {
+        audioElement.muted = true;
+        buttonElement.classList.remove("selectedListenToYourself");
+      }
     }
 
     function exitRoom(errMsg = null){ 
       if (errMsg) console.error(errMsg);
-      localStorage.removeItem("username");
       window.location.href = "/"; 
     }
 
-
     async function sendOfferToEveryone(){
       //https://webrtc.org/getting-started
-      g_localStream = await navigator.mediaDevices.getUserMedia({audio: true});
+      g_localStream = await navigator.mediaDevices.getUserMedia({audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }});
       const audioElement = document.getElementById('selfAudio');
       audioElement.srcObject = g_localStream;
       await audioElement.play();
-      g_localStream.getAudioTracks()[0].onended = () => console.log('Mic stopped!');
+      audioElement.muted = true;
+      if (document.getElementById('muteYourself').classList.contains("selectedMuteYourself"))
+        g_localStream.getAudioTracks().forEach(track => track.enabled = false);
       g_userStoreSet.forEach(username => {
         g_peerConnections[username] = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
         g_localStream.getTracks().forEach(track => g_peerConnections[username].addTrack(track, g_localStream));
@@ -451,21 +499,18 @@
     
     function deleteUserDiv(username){
       const elToRemove = document.getElementById(`divFor${username}`);
-      elToRemove.remove();
-      g_userStoreSet.delete(username);
-    }
-
-
-    window.onbeforeunload = () => {
-      g_socket.send(
-        JSON.stringify({
-          status: g_wsClientToServerStates.DELETE_USER, 
-          username: localStorage.getItem("username")
-        })
-      );
-      g_socket.close();
+      if (elToRemove) {
+        elToRemove.remove();
+        g_userStoreSet.delete(username);
+      }
+      else { console.err(`Tried to delete user ${username}`); }
     }
     
+    window.onbeforeunload = () => {
+      navigator.sendBeacon("/deleteUser", localStorage.getItem("username"));
+      g_socket.close();
+    };
+
     function makeServerDoStuff(command) {
       g_socket.send(JSON.stringify({
         status: g_wsClientToServerStates.DO_STUFF,

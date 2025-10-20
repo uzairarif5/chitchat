@@ -123,7 +123,7 @@
         //g_socket not defined at home.html, but at room.html
         g_socket.send(JSON.stringify({
           status: g_wsClientToServerStates.NEW_IMG, 
-          username: document.getElementById("username").value, 
+          username: localStorage.getItem("username"), 
           imgData: profilePicCanvas.toDataURL()
         }));
       }

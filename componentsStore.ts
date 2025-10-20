@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import { inProduction } from '.';
+
+const inProduction = process.env.NODE_ENV === "production";
 
 class ComponentsStoreClass {
   storage: {[key: string]: string | undefined};
@@ -19,7 +20,7 @@ class ComponentsStoreClass {
     if (this.storage[compName]) return this.storage[compName];
     else {
       let data: string | undefined = fs.readFileSync(`components/${compName}.html`, 'utf8');
-      if (data && !inProduction) this.storage[compName] = data;
+      if (data && inProduction) this.storage[compName] = data;
       return data;
     }
   }

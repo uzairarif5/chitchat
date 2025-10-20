@@ -41,7 +41,6 @@ export default function addFuncToWWS(wss: WebSocketServer){
         case wsCTSS.PASS_OFFER:     userInfoStore.passOffer(jsonData.username, jsonData.toUser, jsonData.offer); break;
         case wsCTSS.PASS_ANSWER:    userInfoStore.passAnswer(jsonData.username, jsonData.toUser, jsonData.answer); break;
         case wsCTSS.PASS_CANDIDATE: userInfoStore.passCandidate(jsonData.username, jsonData.toUser, jsonData.candidate); break;
-        case wsCTSS.DELETE_USER:    userInfoStore.removeUser(jsonData.username); break;
         case wsCTSS.DO_STUFF:       userInfoStore.doStuff(jsonData.username, jsonData.command); break;
         default: wsSend(ws, wsSTCS.ERROR, "Unknown status!");
       }

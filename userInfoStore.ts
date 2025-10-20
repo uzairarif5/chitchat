@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { wsServerToClientStates } from "./statesContainer";
+import { inDevelopment } from ".";
 
 class UserInfoStore{
   imgStorage: {[key: string]: string};
@@ -128,11 +129,13 @@ class UserInfoStore{
     delete this.imgStorage[username]; 
     delete this.sessionStorage[username]; 
     delete this.wsStorage[username]; 
-    
+
     for (let user in this.wsStorage) {
       if (this.usersAlive.has(user)) 
         this.wsStorage[user].send(JSON.stringify({status: wsServerToClientStates.USER_DIED, username: username}));
     }
+
+    if (inDevelopment) console.log(`Deleted user ${username}`);
   }
 
   getAllAliveUsers(){ return this.usersAlive; }

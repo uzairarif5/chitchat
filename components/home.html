@@ -147,7 +147,7 @@
           <label for="username">Username:</label>
           <input type="text" id="username" name="username" autocomplete="name" required>
           <label for="password">Password:</label>
-          <input type="password" id="password" name="password" required>
+          <input type="password" id="password" name="password" autocomplete="off" required>
           <button id="inputButton" type="submit">Let's go</button>
         </form>
       </div>
@@ -168,9 +168,11 @@
       SERVER_ERROR: "SERVER_ERROR"
     }
 
-    window.onload = () => {
+    window.onpageshow = () => {
+      localStorage.removeItem("username");
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
       document.getElementById("inputCard").style.opacity = "1";
-
       document.getElementById("inputCardForm").onsubmit = ((ev) => {
         ev.preventDefault();
         fetch("/createUser", {
@@ -192,7 +194,7 @@
             let errorText = document.getElementById("errorText");
             switch (res.status) {
               case g_createUserStates.NOT_AUTHORIZED:
-                errorText.innerText = "Incorrent Password";
+                errorText.innerText = "Incorrect Password";
                 errorText.style.opacity = "1";
                 break;
               case g_generalStates.SERVER_ERROR:
