@@ -10,7 +10,7 @@ import addFuncToWWS from './serverWebSocketFuncs';
 import userInfoStore from './userInfoStore';
 
 const hostname = '127.0.0.1';
-const port = 3333;
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3333;
 export const inDevelopment = process.env.NODE_ENV === "development";
 
 const server = createServer((req, res) => {

@@ -6,6 +6,9 @@ This is a personal website for chatting with friends.
 
 Versioning is done by using "npm version [new-version] --git-tag-version false".
 
+update 1.0.1:
+- Using `process.env.PORT` in `index.ts` so my app is deployable in render.
+
 update 1.0.0:
 - NODE_ENV with "production" and "development" is now being used correctly. Previously it was flipped.
 - Deleted the `DELETED_USER` case from `wsClientToServerStates`. Deleting users will now use http instead of WebSocket.
