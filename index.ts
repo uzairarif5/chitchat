@@ -33,7 +33,7 @@ const server = createServer((req, res) => {
   else res.end();
 });
 
-const socket = new WebSocketServer({ server });
+const socket = new WebSocketServer({ server }, () => console.log("Web socket opened!"));
 addFuncToWWS(socket);
 
 server.listen(port, hostname, () => {
