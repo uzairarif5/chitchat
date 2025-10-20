@@ -15,7 +15,7 @@ class ComponentsStoreClass {
     Object.seal(this.storage);
   }
 
-  getComponent(compName: string, includeJs?: boolean){
+  getComponent(compName: string){
     if (!(compName in this.storage)) throw new Error(`Property ${compName} is not storage.`);
     if (this.storage[compName]) return this.storage[compName];
     else {
@@ -24,6 +24,8 @@ class ComponentsStoreClass {
       return data;
     }
   }
+
+  setComponent(compName: string, data: string){ this.storage[compName] = data; }
 }
 
 const componentsStore = new ComponentsStoreClass();

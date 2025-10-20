@@ -6,6 +6,10 @@ This is a personal website for chatting with friends.
 
 Versioning is done by using "npm version [new-version] --git-tag-version false".
 
+update 1.1.0:
+- Added `setComponent` function to `ComponentsStoreClass`.
+- Websocket will use wss protocol if the app is deployed on render.com.
+
 update 1.0.1 - 1.0.3:
 - Using `process.env.PORT` in `index.ts` so my app is deployable in render.
 
