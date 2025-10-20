@@ -259,7 +259,7 @@
     function startSocket(){
       const username = localStorage.getItem("username");
       try{
-        g_socket = new WebSocket('ws://localhost:3333');
+        /*G_SOCKET*/ //G_SOCKET will be replaced by a line which initializes websocket.
         g_socket.addEventListener('open', event => {
           console.log("Websocket successfully opened!");
           g_socket.send(JSON.stringify({status: g_wsClientToServerStates.NEW_CONNECTION, username: username}));

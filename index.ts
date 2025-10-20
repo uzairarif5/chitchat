@@ -11,7 +11,7 @@ import userInfoStore from './userInfoStore';
 
 // process.env.PORT is defined in render
 const hostname = process.env.PORT ? '0.0.0.0' : '127.0.0.1';
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3333;
+export const port = process.env.PORT ? parseInt(process.env.PORT) : 3333;
 export const inDevelopment = process.env.NODE_ENV === "development";
 
 const server = createServer((req, res) => {
