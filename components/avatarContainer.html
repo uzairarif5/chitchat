@@ -1,0 +1,138 @@
+
+<div id="profilePicHolder" style="position: relative;">
+  <div id="profilePic" style="position: relative;background-color: #222;">
+    <canvas style="width: 100%;height: 100%;display: block;border: 3px solid #000;border-radius: 15px;box-sizing: border-box;"></canvas>
+    <button id="picChangeMenubutton" title="change profile pic" type="button" style="position: absolute;padding: 4px;outline: none;">
+      <i class="fa-solid fa-pen"></i>
+    </button>
+  </div>
+  <dialog id="imageOption" style="border: 3px solid #000;background-color: #222;border-radius: 10px; outline: none;padding: 0;color: var(--text-color);">
+    <div style="display: grid; grid-template-columns: 200px 250px; grid-template-rows: auto auto 100px;">
+      <div id="profilePicInDialog" style="border: 3px solid #000; background-color: #222; width: 180px; height: 180px; border-radius: 15px; grid-row: span 3;justify-self: center;align-self: center;position: relative;margin: 20px;scrollbar-width: none;overflow: auto;">
+        <div style="width: auto;height: auto;display: block">
+          <canvas style="width: 100%;height: 100%;display: block"></canvas>
+        </div>
+      </div>
+      <button id="closeDialogueButton" style="border-radius: 10px; justify-self: end;padding: 4px;margin: 4px;align-self: center;outline: none;" title="Close dialogue" type="button"><i class="fa-solid fa-xmark"></i></button>
+      <ul style="padding-left: 20px;">
+        <li>For vertical overflows, you can scroll vertically.</li>
+        <li>For horizontal overflows, use shift+scroll to scroll horitzontal.</li>
+      </ul>
+      <section id="buttonSection" style="display: flex;flex-direction: row;justify-content:space-evenly;">
+        <label id="profilePicUploaderLabel" for="profilePicUploader" style="border-radius: 10px;justify-self: center;align-self: center;font-size: 14px; line-height: 20px;font-family: var(--main-font); cursor: pointer;padding: 4px;user-select: none;">Select Image</label>
+        <button type="button" title="" value="" id="saveButton" style="border-radius: 10px;justify-self: center;align-self: center;font-size: 14px; line-height: 20px;font-family: var(--main-font); cursor: pointer;padding: 4px;user-select: none;" >Save</button>
+        <input type="file" title="" value="" accept="image/png, image/jpeg" id="profilePicUploader" style="display: none;"/>
+      </section>
+    </div>
+  </dialog>
+  <input id="editableName" type="text" style="margin: 0px;text-align: center;font-size: 14px;text-overflow: ellipsis;width: 106px;text-wrap: nowrap;overflow: hidden;outline: none;background-color: transparent;color: var(--text-color);border: transparent 3px solid;border-radius: 10px;line-height: 25px;box-sizing: border-box;" title="change name" />
+  <script>
+    let localStorageImgData = localStorage.getItem("imageData");
+
+    const newImgObj = new Image();
+
+    const profilePic = document.querySelector("#profilePic");
+    const profilePicCanvas = document.querySelector("#profilePic canvas");
+    const profilePicCtx = profilePicCanvas.getContext("2d");
+
+    const dialogProfilePic = document.querySelector("#profilePicInDialog");
+    const dialogProfilePicDiv = document.querySelector("#profilePicInDialog div");
+    const dialogProfilePicCanvas = document.querySelector("#profilePicInDialog canvas");
+    const dialogProfilePicCtx = dialogProfilePicCanvas.getContext("2d");
+
+    const profilePicUploader = document.getElementById("profilePicUploader");
+    profilePicUploader.onchange = () => { newImgObj.src = URL.createObjectURL(profilePicUploader.files[0]); };
+
+    let firstOnload = true;
+    newImgObj.onload = () => {
+      dialogProfilePicCanvas.width = newImgObj.width;
+      dialogProfilePicCanvas.height = newImgObj.height;
+      dialogProfilePicCtx.clearRect(0, 0, dialogProfilePicCanvas.width, dialogProfilePicCanvas.height);
+      dialogProfilePicCtx.drawImage(newImgObj, 0, 0);
+
+      if (newImgObj.width < newImgObj.height) {
+        set100AndAuto(dialogProfilePicDiv);
+        set100AndAuto(dialogProfilePicCanvas);
+      }
+      else {
+        setAutoAnd100(dialogProfilePicDiv);
+        setAutoAnd100(dialogProfilePicCanvas);
+      }
+
+      if (firstOnload) {
+        firstOnload = false;
+        setProfilePicCanvas();
+      }
+    }
+
+    function set100AndAuto(el){
+      el.style.width = "100%";
+      el.style.height = "auto";
+    }
+
+    function setAutoAnd100(el){
+      el.style.width = "auto";
+      el.style.height = "100%";
+    }
+
+    function setProfilePicCanvas(){
+      if (!(localStorageImgData)) {
+        profilePicCanvas.width = newImgObj.width;
+        profilePicCanvas.height = newImgObj.height;
+        profilePicCtx.clearRect(0, 0, profilePicCanvas.width, profilePicCanvas.height);
+        profilePicCtx.drawImage(newImgObj, 0, 0);
+      }
+      else if (newImgObj.width < newImgObj.height) {
+        profilePicCanvas.width = profilePicCanvas.height = newImgObj.width;
+        const ratio = newImgObj.height/localStorage.getItem("dialogCanvasRectHeight");
+        const sourceY = localStorage.getItem("imageTopScroll") * ratio;
+        const cropWidth = newImgObj.width;
+        const cropHeight = 180 * ratio;
+        profilePicCtx.drawImage(newImgObj, 0, sourceY, cropWidth, cropHeight, 0, 0, profilePicCanvas.width, profilePicCanvas.height);
+      }
+      else{ 
+        profilePicCanvas.width = profilePicCanvas.height = newImgObj.height;
+        const ratio = newImgObj.width/localStorage.getItem("dialogCanvasRectWidth");
+        const sourceX = localStorage.getItem("imageLeftScroll") * ratio;
+        const cropWidth = 180 * ratio;
+        const cropHeight = newImgObj.height;
+        profilePicCtx.drawImage(newImgObj, sourceX, 0, cropWidth, cropHeight, 0, 0, profilePicCanvas.width, profilePicCanvas.height);
+      }
+    }
+    
+    document.getElementById("closeDialogueButton").onclick = () => document.getElementById("imageOption").close();
+
+    document.getElementById("picChangeMenubutton").onclick = () => { 
+      document.getElementById("imageOption").showModal();
+      dialogProfilePic.scrollTop = localStorage.getItem("imageTopScroll");
+      dialogProfilePic.scrollLeft = localStorage.getItem("imageLeftScroll");
+    }
+
+    document.getElementById("saveButton").onclick = () => { 
+      localStorage.setItem("imageData", dialogProfilePicCanvas.toDataURL());
+      localStorage.setItem("imageTopScroll", dialogProfilePic.scrollTop);
+      localStorage.setItem("imageLeftScroll", dialogProfilePic.scrollLeft);
+      
+      const dialogCanvasRect = dialogProfilePicCanvas.getBoundingClientRect();
+      localStorage.setItem("dialogCanvasRectWidth", dialogCanvasRect.width);
+      localStorage.setItem("dialogCanvasRectHeight", dialogCanvasRect.height);
+
+      setProfilePicCanvas();
+
+      try{
+        //g_socket not defined at home.html, but at room.html
+        g_socket.send(JSON.stringify({
+          status: g_wsClientToServerStates.NEW_IMG, 
+          username: document.getElementById("username").value, 
+          imgData: profilePicCanvas.toDataURL()
+        }));
+      }
+      catch{}
+
+      document.getElementById("imageOption").close();
+    }
+
+    if (localStorageImgData) newImgObj.src = localStorageImgData;
+    else newImgObj.src = "pics/defaultPicWhite.png";
+  </script>
+</div>

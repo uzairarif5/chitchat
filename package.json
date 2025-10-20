@@ -1,0 +1,30 @@
+{
+  "name": "chitchat",
+  "version": "1.0.0",
+  "description": "gossip or something i dont know",
+  "homepage": "https://github.com/uzairarif5/chitchat#readme",
+  "bugs": {
+    "url": "https://github.com/uzairarif5/chitchat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uzairarif5/chitchat.git"
+  },
+  "license": "ISC",
+  "author": "Uzair Arif",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx tsx index.ts",
+    "dev": "set \"NODE_ENV=production\" && npx tsx --env-file=.env index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.20.5"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

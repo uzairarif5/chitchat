@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>ChitChat Log In</title>
+    <script src="https://kit.fontawesome.com/8a0b394f55.js" crossorigin="anonymous" async defer></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Akatab:wght@400;500;600;700;800;900&display=swap');
+
+      :root{
+        --text-color: #eee;
+        --main-font:  "Akatab";
+      }
+
+      body {
+        background-color: #111;
+        background-image: linear-gradient(to bottom right, #101010, #1f1f1f);
+        min-height: calc(100vh - 1px);
+        color: var(--text-color);
+        font-family: var(--main-font);
+        border: none;
+        padding-top: 1px;
+        margin: 0;
+        overflow: hidden;
+        
+        *{
+          -webkit-transition: background-color 500ms linear;
+          -ms-transition: background-color 500ms linear;
+          transition: background-color 500ms linear;
+        }
+
+
+        #inputCard {
+          border: black solid 3px;
+          margin: 140px auto 0px;
+          width: min-content;
+          position: relative;
+          background-color: #252525;
+          background-image: linear-gradient(to bottom right, #202020, #2c2c2c);
+          border-radius: 20px;
+          opacity: 0;
+          transition: opacity 500ms linear;
+          box-shadow: 2px 2px 5px 0px #000 ;
+
+          h1{
+            margin: 40px 0px 0px 0px;
+            width: 100%;
+            text-align: center;
+          }
+
+          #errorText{
+            font-size: 14px;
+            line-height: 18px;
+            color: red;
+            text-align: center;
+            margin: 0;
+            opacity: 0;
+            transition: opacity 300ms linear;
+          }
+
+          #picAndForm{
+            margin: 5px 20px 25px 20px;
+            display: grid;
+            grid-template-columns: auto auto;
+            align-items: center;
+            justify-items: center;
+            column-gap: 30px;
+
+            #inputCardForm{
+              display: grid;
+              grid-template-columns: 100px 200px;
+              grid-template-rows: 55px 55px 70px;
+              align-items: center;
+
+              label{
+                font-size: 16px;
+                line-height: 22px;
+              }
+
+              input{
+                outline: none;
+                background-color: #202020;
+                border: black solid 2px;
+                border-radius: 5px;
+                font-family: var(--main-font);
+                font-size: 14px;
+                line-height: 20px;
+                color: var(--text-color);
+
+                &:hover, &:focus{
+                  background-color: #2f2f2f;
+                }
+
+                &::-ms-reveal{
+                  filter: invert(100%);
+                }
+              }
+              
+              #inputButton{
+                font-family: var(--main-font);
+                grid-column: span 2;
+                outline: none;
+                border-radius: 5px;
+                width: 100px;
+                line-height: 25px;
+                font-size: 16px;
+                justify-self: center;
+              }
+            }
+          }
+
+          #profilePicHolder{
+            #profilePic{ /*in avatarContainer.html*/
+              width: 180px;
+              height: 180px;
+            }
+            #picChangeMenubutton{
+              border-radius: 10px;
+              bottom: -3px; 
+              right: -3px;
+            }
+            #editableName{
+              display: none;
+            }
+          }
+        } 
+
+        button, #profilePicUploaderLabel {
+          cursor: pointer;
+          color: var(--text-color);
+          border: black solid 2px;
+          background-color: #333;
+
+          &:hover, &:focus{
+            background-color: #444;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="inputCard">
+      <h1>ChitChat</h1>
+      <p id="errorText">&nbsp;</p>
+      <div id="picAndForm">
+        %avatarContainer%
+        <form id="inputCardForm" method="post">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" autocomplete="name" required>
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required>
+          <button id="inputButton" type="submit">Let's go</button>
+        </form>
+      </div>
+    </main>
+  </body>
+  <script>
+    var g_socket; //initialized in room.html
+
+    const g_createUserStates = {
+      SUCCESS: "SUCCESS",
+      USERNAME_NOT_STRING: "USERNAME_NOT_STRING",
+      IMGDATA_NOT_STRING: "IMGDATA_NOT_STRING",
+      USERNAME_TAKEN: "USERNAME_TAKEN",
+      NOT_AUTHORIZED: "NOT_AUTHORIZED"
+    }
+    const g_generalStates = {
+      TOO_MUCH_DATA: "TOO_MUCH_DATA",
+      SERVER_ERROR: "SERVER_ERROR"
+    }
+
+    window.onload = () => {
+      document.getElementById("inputCard").style.opacity = "1";
+
+      document.getElementById("inputCardForm").onsubmit = ((ev) => {
+        ev.preventDefault();
+        fetch("/createUser", {
+          method:"POST",
+          body: JSON.stringify({
+            password: document.getElementById("password").value,
+            username: document.getElementById("username").value,
+            imgData: profilePicCanvas.toDataURL() //context defined in avatarContainer.html
+          })
+        })
+        .then(res => res.json())
+        .then(res => {
+          if (res.status === g_createUserStates.SUCCESS) {
+            localStorage.setItem("username", document.getElementById("username").value);
+            document.getElementById("inputCard").style.opacity = "0";
+            window.setTimeout(()=>{ window.location.href = "/room"; }, 500);
+          }
+          else{
+            let errorText = document.getElementById("errorText");
+            switch (res.status) {
+              case g_createUserStates.NOT_AUTHORIZED:
+                errorText.innerText = "Incorrent Password";
+                errorText.style.opacity = "1";
+                break;
+              case g_generalStates.SERVER_ERROR:
+                errorText.innerText = "Server Error. Please try again later.";
+                errorText.style.opacity = "1";
+                break;
+              case g_generalStates.TOO_MUCH_DATA:
+                errorText.innerText = "The image size is too large.";
+                errorText.style.opacity = "1";
+                break;
+              case g_createUserStates.USERNAME_TAKEN:
+                errorText.innerText = "Username already taken.";
+                errorText.style.opacity = "1";
+                break;
+              case g_createUserStates.USERNAME_NOT_STRING:
+                errorText.innerText = "Username is not string. Please report this!";
+                errorText.style.opacity = "1";
+                break;
+              case g_createUserStates.IMGDATA_NOT_STRING:
+                errorText.innerText = "Image data is not string. Please report this!";
+                errorText.style.opacity = "1";
+                break;
+              default:
+                console.log(res);
+                throw new Error("Default case reached!");
+            }
+          }
+        })
+        .catch(console.error);
+      });
+    }
+  </script>
+</html>
