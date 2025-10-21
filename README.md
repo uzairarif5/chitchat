@@ -6,6 +6,9 @@ This is a personal website for chatting with friends.
 
 Versioning is done by using "npm version [new-version] --git-tag-version false".
 
+update 1.2.0:
+- Added the option to view and change microphone.
+
 update 1.1.0 - 1.1.3:
 - Added `setComponent` function to `ComponentsStoreClass`.
 - Websocket will use wss protocol if the app is deployed on render.com.

@@ -34,6 +34,23 @@
             border-bottom: solid 3px #000;
             background-color: #222;
             height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            #selectionEl{
+              outline: none;
+              border: solid 2px #050505;
+              background-color: #1a1a1a;
+              cursor: pointer;
+              border-radius: 6px;
+              color: #999;
+              font-size: 13px;
+              width: 300px;
+              text-overflow: ellipsis;
+              font-family: var(--main-font);
+              white-space: nowrap;
+            }
           }
 
           #avatarHolder{ 
@@ -145,6 +162,7 @@
           border: black solid 2px;
           background-color: #333;
           transition: all 0.3s linear;
+          outline: none;
 
           &:hover, &:focus{
             background-color: #444;
@@ -155,7 +173,9 @@
   </head>
   <body>
     <main id="main">
-      <section id="micSection"></section>
+      <section id="micSection">
+        <select id="selectionEl" name="selectedMic" title="Select a microphone" onchange="setLocalStream()"></select>
+      </section>
       <section id="avatarHolder">
         <section id="ownPicContainer">%avatarContainer%</section>
         <section id="otherPeoplePicContainer"></section>
@@ -172,7 +192,7 @@
           <i class="fa-solid fa-door-open"></i>
         </button>
       </section>
-      <audio id="selfAudio" style="position: fixed; top: 0;left: 0;"></audio>
+      <audio id="selfAudio" style="position: fixed; top: 0;left: 0;" autoplay muted></audio>
     </main>
 
     <div id="originalTemplateContainer" style="display: none;">
@@ -267,8 +287,7 @@
         wsMessageStuff();
       }
       catch(err){
-        document.getElementById("errorText").innerText = "Websocket issue, try again later.";
-        document.getElementById("errorText").style.opacity = "1";
+        alert("Websocket issue, try again later.");
         console.error(err);
       }
     }
@@ -314,11 +333,49 @@
       );
     }
 
-    function showMain(){
+    async function showMain(){
+      await setMicSelection();
+      navigator.mediaDevices.addEventListener('devicechange', setMicSelection);
       let mainEl = document.getElementById("main");
       mainEl.style.opacity = "1";
       setAllUsersDiv();
-      sendOfferToEveryone();
+    }
+
+    async function setMicSelection(){
+      const selectionEl = document.getElementById("selectionEl");
+      selectionEl.innerHTML = "";
+      let noInput = true;
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      for (let device of devices) { 
+        if (device.kind === "audioinput") {
+          noInput = false;
+          let optionEl = document.createElement("option");
+          optionEl.innerText = device.label;
+          optionEl.value = device.deviceId;
+          selectionEl.appendChild(optionEl);
+        }
+      }
+      if (noInput) exitRoom("No audio input found!");
+      await setLocalStream();
+    }
+
+    async function setLocalStream() {
+      if (g_localStream) g_localStream.getAudioTracks()[0].stop();
+      g_localStream = await navigator.mediaDevices.getUserMedia({audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        deviceId: {exact: document.getElementById("selectionEl").value}
+      }});
+      const audioElement = document.getElementById('selfAudio');
+      audioElement.srcObject = g_localStream;
+      const audioTrack = g_localStream.getAudioTracks()[0];
+      Object.keys(g_peerConnections).forEach(username => {
+        let sender = g_peerConnections[username].getSenders().find(s => s.track.kind == "audio");
+        if (sender) sender.replaceTrack(audioTrack);
+        else g_peerConnections[username].addTrack(audioTrack, g_localStream);
+      });
+      if (document.getElementById('muteYourself').classList.contains("selectedMuteYourself")) audioTrack.enabled = false;
     }
 
     function setAllUsersDiv() {
@@ -336,6 +393,7 @@
           if (user === curUser) continue;
           setOtherUsersDiv({username: user, imgData: res[user]});
         }
+        sendOfferToEveryone();
       });
     }
 
@@ -385,11 +443,11 @@
       const buttonElement = document.getElementById('muteYourself');
       if (buttonElement.classList.contains("selectedMuteYourself")) { 
         buttonElement.classList.remove("selectedMuteYourself");
-        if (g_localStream) g_localStream.getAudioTracks().forEach(track => track.enabled = true);
+        if (g_localStream) g_localStream.getAudioTracks()[0].enabled = true;
       }
       else {
         buttonElement.classList.add("selectedMuteYourself");
-        if (g_localStream) g_localStream.getAudioTracks().forEach(track => track.enabled = false);
+        if (g_localStream) g_localStream.getAudioTracks()[0].enabled = false;
       }
     }
 
@@ -406,27 +464,19 @@
       }
     }
 
-    function exitRoom(errMsg = null){ 
-      if (errMsg) console.error(errMsg);
+    function exitRoom(errMsg = null, doAlert = false){ 
+      if (errMsg){
+        console.error(errMsg);
+        if (doAlert) alert(errMsg);
+      }
       window.location.href = "/"; 
     }
 
-    async function sendOfferToEveryone(){
+    function sendOfferToEveryone(){
       //https://webrtc.org/getting-started
-      g_localStream = await navigator.mediaDevices.getUserMedia({audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false
-      }});
-      const audioElement = document.getElementById('selfAudio');
-      audioElement.srcObject = g_localStream;
-      await audioElement.play();
-      audioElement.muted = true;
-      if (document.getElementById('muteYourself').classList.contains("selectedMuteYourself"))
-        g_localStream.getAudioTracks().forEach(track => track.enabled = false);
       g_userStoreSet.forEach(username => {
         g_peerConnections[username] = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
-        g_localStream.getTracks().forEach(track => g_peerConnections[username].addTrack(track, g_localStream));
+        g_peerConnections[username].addTrack(g_localStream.getAudioTracks()[0], g_localStream);
         addOnTrackEvent(username);
         addOnIceCandidateEvent(username);
         sendOffer(username);
