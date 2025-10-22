@@ -3,6 +3,7 @@ import { send500JSON } from "./send500";
 import send200 from "./send200";
 import userInfoStore from "../userInfoStore";
 import { generalStates, checkUserStates } from "../statesContainer";
+import { inDevelopment } from "..";
 
 export default function checkUser(req: IncomingMessage, res: ServerResponse<IncomingMessage>) {
   if (req.method != "POST") {
@@ -38,7 +39,7 @@ export default function checkUser(req: IncomingMessage, res: ServerResponse<Inco
 
 function onReqDataComplete(req: IncomingMessage, res: ServerResponse<IncomingMessage>, username: string) {
   try {
-    const cookieData = req.headers.cookie!.split("=");
+    const cookieData = req.headers.cookie!.split(";")[0].split("=");
     if (cookieData![0] !== "sessionToken") 
       send500JSON(res, {status: checkUserStates.SESSION_TOKEN_MISSING});
     else if (!userInfoStore.checkUserInSessionStorage(username)) 

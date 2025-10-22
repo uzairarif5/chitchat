@@ -119,6 +119,7 @@ class UserInfoStore{
   }
   
   passCandidate(fromUser: string, toUser: string, candidate: Object){
+    if (inDevelopment) console.log(`Passing candidate  from ${fromUser} to ${toUser}:\n${candidate}`);
     this.wsStorage[toUser].send(JSON.stringify({
       status: wsServerToClientStates.PASSING_CANDIDATE,
       fromUser: fromUser,

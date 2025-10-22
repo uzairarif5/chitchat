@@ -284,6 +284,7 @@
       try{
         /*G_SOCKET*/ //G_SOCKET will be replaced by a line which initializes websocket.
         g_socket.addEventListener('open', event => {
+          alert("g_socket open");
           g_socket.send(JSON.stringify({status: g_wsClientToServerStates.NEW_CONNECTION, username: username}));
         });
         g_socket.addEventListener("close", () => {
@@ -293,11 +294,11 @@
           }
          });
         wsMessageStuff();
+        window.setTimeout(() => {
+          if (g_socket.readyState !== g_socket.OPEN) exitRoom("Websocket did not open.");
+        }, 1000);
       }
-      catch(err){
-        alert("Websocket issue, try again later.");
-        console.error(err);
-      }
+      catch(err){ exitRoom("Websocket issue, try again later."); }
     }
 
     function wsMessageStuff(){
@@ -342,7 +343,9 @@
     }
 
     async function showMain(){
+      await setLocalStream();
       await setMicSelection();
+      sendTrackToPeers();
       navigator.mediaDevices.addEventListener('devicechange', setMicSelection);
       if (window.innerWidth <= window.innerHeight) {
         const footerEl = document.getElementById("footerSettings");
@@ -353,11 +356,24 @@
       mainEl.style.opacity = "1";
       setAllUsersDiv();
     }
+    
+    async function setLocalStream() {
+      if (g_localStream) g_localStream.getAudioTracks()[0].stop();
+      g_localStream = await navigator.mediaDevices.getUserMedia({audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        deviceId: {exact: document.getElementById("selectionEl").value}
+      }});
+      const audioElement = document.getElementById('selfAudio');
+      audioElement.srcObject = g_localStream;
+      const audioTrack = g_localStream.getAudioTracks()[0];
+      if (document.getElementById('muteYourself').classList.contains("selectedMuteYourself")) audioTrack.enabled = false;
+    }
 
-    async function setMicSelection(){
+    async function setMicSelection() {
       const selectionEl = document.getElementById("selectionEl");
       selectionEl.innerHTML = "";
-      await navigator.mediaDevices.getUserMedia({audio: true}); 
       const devices = await navigator.mediaDevices.enumerateDevices();
       let audioDevices = 0;
       for (let device of devices) { 
@@ -370,26 +386,15 @@
         }
       }
       if (!audioDevices) exitRoom("No audio input found!");
-      await setLocalStream();
     }
-
-    async function setLocalStream() {
-      if (g_localStream) g_localStream.getAudioTracks()[0].stop();
-      g_localStream = await navigator.mediaDevices.getUserMedia({audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-        deviceId: {exact: document.getElementById("selectionEl").value}
-      }});
-      const audioElement = document.getElementById('selfAudio');
-      audioElement.srcObject = g_localStream;
+    
+    function sendTrackToPeers() {
       const audioTrack = g_localStream.getAudioTracks()[0];
       Object.keys(g_peerConnections).forEach(username => {
         let sender = g_peerConnections[username].getSenders().find(s => s.track.kind == "audio");
         if (sender) sender.replaceTrack(audioTrack);
         else g_peerConnections[username].addTrack(audioTrack, g_localStream);
       });
-      if (document.getElementById('muteYourself').classList.contains("selectedMuteYourself")) audioTrack.enabled = false;
     }
 
     function setAllUsersDiv() {
@@ -499,6 +504,27 @@
       });
     }
 
+    function addOnTrackEvent(username) {
+      g_peerConnections[username].addEventListener('track', async (event) => {
+        const [remoteStream] = event.streams;
+        document.querySelector(`#divFor${username} audio`).srcObject = remoteStream;
+      });
+    }
+
+    function addOnIceCandidateEvent(username) {      
+      g_peerConnections[username].onicecandidate = (event) => {
+        if(event.candidate)
+          g_socket.send(
+            JSON.stringify({
+              status: g_wsClientToServerStates.PASS_CANDIDATE,
+              username: localStorage.getItem("username"),
+              toUser: username,
+              candidate: event.candidate
+            })
+          );
+      }
+    }
+
     async function sendOffer(toUser){
       const offer = await g_peerConnections[toUser].createOffer();
       await g_peerConnections[toUser].setLocalDescription(offer);
@@ -515,10 +541,10 @@
     async function gotOfferFromSomeone(offerer, offerAsString){
       console.log(`Got RTC offer from ${offerer}`);
       g_peerConnections[offerer] = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
-      g_localStream.getTracks().forEach(track => g_peerConnections[offerer].addTrack(track, g_localStream));
       addOnTrackEvent(offerer);
       addOnIceCandidateEvent(offerer);
-      g_peerConnections[offerer].setRemoteDescription(new RTCSessionDescription(JSON.parse(offerAsString)));
+      g_localStream.getTracks().forEach(track => g_peerConnections[offerer].addTrack(track, g_localStream));
+      await g_peerConnections[offerer].setRemoteDescription(new RTCSessionDescription(JSON.parse(offerAsString)));
       const answer = await g_peerConnections[offerer].createAnswer();
       await g_peerConnections[offerer].setLocalDescription(answer);
       g_socket.send(
@@ -540,27 +566,6 @@
     function gotCandidateUpdate(fromUser, candidateAsString){
       if (g_peerConnections[fromUser])
         g_peerConnections[fromUser].addIceCandidate(JSON.parse(candidateAsString));
-    }
-
-    function addOnTrackEvent(username) {
-      g_peerConnections[username].addEventListener('track', async (event) => {
-        const [remoteStream] = event.streams;
-        document.querySelector(`#divFor${username} audio`).srcObject = remoteStream;
-      });
-    }
-
-    function addOnIceCandidateEvent(username) {      
-      g_peerConnections[username].onicecandidate = (event) => {
-        if(event.candidate)
-          g_socket.send(
-            JSON.stringify({
-              status: g_wsClientToServerStates.PASS_CANDIDATE,
-              username: localStorage.getItem("username"),
-              toUser: username,
-              candidate: event.candidate
-            })
-          );
-      }
     }
     
     function deleteUserDiv(username){

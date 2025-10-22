@@ -36,8 +36,8 @@ function onReqDataComplete(res: ServerResponse<IncomingMessage>, body: JSON) {
         const token = userInfoStore.getSessionToken(body.username);
         const oneYear = 365 * 24 * 60 * 60;
         if (inDevelopment) {
-          console.log(`created user ${body.username}`);
           res.setHeader('Set-Cookie', `sessionToken=${token}; Max-Age=${oneYear}; SameSite=Lax; Path=/`);
+          console.log(`created user ${body.username} with token ${token}.`);
         }
         else res.setHeader('Set-Cookie', `sessionToken=${token}; Max-Age=${oneYear}; HttpOnly; Secure; SameSite=Strict; Path=/`);
         send200(
