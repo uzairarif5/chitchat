@@ -6,8 +6,12 @@ This is a personal website for chatting with friends.
 
 Versioning is done by using "npm version [new-version] --git-tag-version false".
 
+update 1.3.4:
+- Improved audio input missing error handling in `setMicSelection`.
+
 update 1.3.0 - 1.3.3:
 - Added mobile support.
+- Made some css changes.
 
 update 1.2.0:
 - Added the option to view and change microphone.

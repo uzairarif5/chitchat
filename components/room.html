@@ -357,18 +357,18 @@
     async function setMicSelection(){
       const selectionEl = document.getElementById("selectionEl");
       selectionEl.innerHTML = "";
-      let noInput = true;
       const devices = await navigator.mediaDevices.enumerateDevices();
+      let audioDevices = 0;
       for (let device of devices) { 
-        if (device.kind === "audioinput") {
-          noInput = false;
+        if (device.kind === "audioinput" && device.deviceId.length) {
           let optionEl = document.createElement("option");
           optionEl.innerText = device.label;
           optionEl.value = device.deviceId;
           selectionEl.appendChild(optionEl);
+          audioDevices += 1;
         }
       }
-      if (noInput) exitRoom("No audio input found!");
+      if (!audioDevices) exitRoom("No audio input found!");
       await setLocalStream();
     }
 
