@@ -287,15 +287,12 @@
           g_socket.send(JSON.stringify({status: g_wsClientToServerStates.NEW_CONNECTION, username: username}));
         });
         g_socket.addEventListener("close", () => {
-          if (!g_exitingRoom) {
-            alert("Websocket closed! If this was not intended,\nthen please report it!");
-            exitRoom();
-          }
+          if (!g_exitingRoom) exitRoom("Websocket closed! If this was not intended,\nthen please report it!");
          });
         wsMessageStuff();
         window.setTimeout(() => {
           if (g_socket.readyState !== g_socket.OPEN) exitRoom("Websocket did not open.");
-        }, 1000);
+        }, 3000);
       }
       catch(err){ exitRoom("Websocket issue, try again later."); }
     }
@@ -484,7 +481,7 @@
       }
     }
 
-    function exitRoom(errMsg = null, doAlert = false){ 
+    function exitRoom(errMsg = null, doAlert = true){ 
       g_exitingRoom = true;
       if (errMsg){
         console.error(errMsg);

@@ -6,6 +6,10 @@ This is a personal website for chatting with friends.
 
 Versioning is done by using "npm version [new-version] --git-tag-version false".
 
+update 1.3.8:
+- Wait time for websocket to open is now 3 seconds.
+- exitroom alert is now defaulted to `true`.
+
 update 1.3.7:
 - Fixed overconstrained error, and removed the "websocket open" alert.
 
