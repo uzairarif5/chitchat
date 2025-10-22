@@ -26,7 +26,7 @@ export default function addFuncToWWS(wss: WebSocketServer){
       else if (!("status" in jsonData)) wsSend(ws, wsSTCS.ERROR, "Input does not have 'status' property!");
       else if ("username" in jsonData) {
         try {
-          const curToken = userInfoStore.getToken(jsonData.username);
+          const curToken = userInfoStore.getSessionToken(jsonData.username);
           if (curToken !== cookieData[1]) wsSend(ws, wsSTCS.ERROR, "Cookie-username does not match!");
         }
         catch { wsSend(ws, wsSTCS.ERROR, `Token for "${jsonData.username}" missing in the backend!`); }

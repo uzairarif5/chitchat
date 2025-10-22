@@ -15,6 +15,8 @@ export const checkUserStates = {
 
 export const generalStates = {
   TOO_MUCH_DATA: "TOO_MUCH_DATA",
+  COOKIE_ISSUE: "COOKIE_ISSUE",
+  NOT_POST: "NOT_POST",
   SERVER_ERROR: "SERVER_ERROR",
 };
 

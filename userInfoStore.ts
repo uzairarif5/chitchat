@@ -7,11 +7,13 @@ class UserInfoStore{
   sessionStorage: {[key: string]: string}; 
   wsStorage: {[key: string]: WebSocket};
   usersAlive: Set<string>;
+  usersAddedLastSixSeconds: Set<string>;
 
   constructor(){
     this.imgStorage = {}
     this.sessionStorage = {}
     this.wsStorage = {}
+    this.usersAddedLastSixSeconds = new Set();
     this.usersAlive = new Set();
 
     setInterval(()=>{
@@ -42,7 +44,7 @@ class UserInfoStore{
   
   getImgStorageAsString() { return JSON.stringify(this.imgStorage); }
 
-  delete(username: string) { 
+  deleteImg(username: string) { 
     if (this.checkUserInImgStorage(username)) delete this.imgStorage[username]; 
     else throw new Error("User not in storage.");
   }
@@ -56,10 +58,9 @@ class UserInfoStore{
     const bytes: Buffer<ArrayBufferLike> = randomBytes(16);
     const token = bytes.toString('hex');
     this.sessionStorage[username] = token;
-    return token;
   };
 
-  getToken(username: string){
+  getSessionToken(username: string){
     if (!this.sessionStorage[username]) throw new Error(`Username "${username}" does not exist in storage.`);
     return this.sessionStorage[username];
   }
@@ -100,19 +101,21 @@ class UserInfoStore{
 
   //WebRTC stuff
   passOffer(fromUser: string, toUser: string, offer: Object){
-    this.wsStorage[toUser].send(JSON.stringify({
-      status: wsServerToClientStates.OFFER_FROM_SOMEONE, 
-      fromUser: fromUser,
-      offer: JSON.stringify(offer)
-    }));
+    if (this.usersAlive.has(toUser) && this.wsStorage[toUser] && this.wsStorage[toUser].OPEN) 
+      this.wsStorage[toUser].send(JSON.stringify({
+        status: wsServerToClientStates.OFFER_FROM_SOMEONE, 
+        fromUser: fromUser,
+        offer: JSON.stringify(offer)
+      }));
   }
 
   passAnswer(fromUser: string, toUser: string, answer: Object){
-    this.wsStorage[toUser].send(JSON.stringify({
-      status: wsServerToClientStates.ANSWER_FROM_SOMEONE,
-      fromUser: fromUser,
-      answer: JSON.stringify(answer)
-    }));
+    if (this.usersAlive.has(toUser) && this.wsStorage[toUser] && this.wsStorage[toUser].OPEN) 
+      this.wsStorage[toUser].send(JSON.stringify({
+        status: wsServerToClientStates.ANSWER_FROM_SOMEONE,
+        fromUser: fromUser,
+        answer: JSON.stringify(answer)
+      }));
   }
   
   passCandidate(fromUser: string, toUser: string, candidate: Object){
@@ -124,14 +127,36 @@ class UserInfoStore{
   }
   
   //general
+  createUser(username: string, imgData: string){
+    if (username in this.usersAlive) throw new Error(`User ${username} already exists!`);
+    this.usersAddedLastSixSeconds.add(username);
+    userInfoStore.setImgData(username, imgData);
+    userInfoStore.setSessionToken(username);
+    setTimeout(() => {
+      if (!(username in this.wsStorage)) this.removeUser(username);
+    }, 6000);
+  }
+
   removeUser(username: string) {
-    if (this.wsStorage[username]) this.wsStorage[username].close();
-    delete this.imgStorage[username]; 
-    delete this.sessionStorage[username]; 
-    delete this.wsStorage[username]; 
+    let deleted = false;
+    if (username in this.wsStorage) {
+      this.wsStorage[username].close();
+      delete this.wsStorage[username]; 
+      deleted = true;
+    }
+    if (username in this.imgStorage) {
+      delete this.imgStorage[username]; 
+      deleted = true;
+    } 
+    if (username in this.sessionStorage) {
+      delete this.sessionStorage[username]; 
+      deleted = true;
+    }
+
+    if (!deleted) return;
 
     for (let user in this.wsStorage) {
-      if (this.usersAlive.has(user)) 
+      if (this.usersAlive.has(user) && this.wsStorage[user] && this.wsStorage[user].OPEN) 
         this.wsStorage[user].send(JSON.stringify({status: wsServerToClientStates.USER_DIED, username: username}));
     }
 

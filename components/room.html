@@ -3,6 +3,7 @@
   <head>
     <title>ChitChat</title>
     <script src="https://kit.fontawesome.com/8a0b394f55.js" crossorigin="anonymous" async defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Akatab:wght@400;500;600;700;800;900&display=swap');
       
@@ -214,6 +215,8 @@
     }
     const g_generalStates = {
       TOO_MUCH_DATA: "TOO_MUCH_DATA",
+      COOKIE_ISSUE: "COOKIE_ISSUE",
+      NOT_POST: "NOT_POST",
       SERVER_ERROR: "SERVER_ERROR"
     }
     const g_wsServerToClientStates = {
@@ -242,11 +245,13 @@
     const g_userStoreSet = new Set();
     const g_peerConnections = {};
     var g_localStream;
+    var g_exitingRoom = false;
 
     window.onload = () => {
       fetch("/checkUser", { 
         method:"POST",
-        body: localStorage.getItem("username")
+        body: localStorage.getItem("username"),
+        signal: AbortSignal.timeout(5000)
       })
       .then(res => res.json())
       .then(res => {
@@ -255,20 +260,22 @@
             startSocket(); 
             break;
           case g_generalStates.SERVER_ERROR:
-            alert("Server error. Please report this!");
-            exitRoom();
+            exitRoom("Server error. Please report this!", true);
             break;
+          case g_generalStates.COOKIE_ISSUE:
+            exitRoom("Cookie Issue!\nPlease report this!", true);
+            break;
+          case g_generalStates.NOT_POST:
           case g_checkUserStates.SESSION_TOKEN_MISSING:
           case g_checkUserStates.USER_NOT_IN_SESSION_STORAGE: 
           case g_checkUserStates.SESSION_TOKEN_USERNAME_MISMATCH: 
-            exitRoom(`Encountered error: ${res.status}.`); 
+            exitRoom(`Encountered error: ${res.status}.`, true); 
             break;
           default:
-            console.error("Default case reached!");
-            window.location.href = "/"; 
+            exitRoom("Default case reached!\nPlease report this!", true);
         }
       })
-      .catch(console.error);
+      .catch(err => exitRoom(`Error when fetching checkUser, please report this!\n${err}`, true));
 
       document.addEventListener('keydown', (event) => {
         if (event.key === 'M' || event.key === 'm') toggleMuteYourself();
@@ -281,9 +288,14 @@
       try{
         /*G_SOCKET*/ //G_SOCKET will be replaced by a line which initializes websocket.
         g_socket.addEventListener('open', event => {
-          console.log("Websocket successfully opened!");
           g_socket.send(JSON.stringify({status: g_wsClientToServerStates.NEW_CONNECTION, username: username}));
         });
+        g_socket.addEventListener("close", () => {
+          if (!g_exitingRoom) {
+            alert("Websocket closed! If this was not intended,\nthen please report it!");
+            exitRoom();
+          }
+         });
         wsMessageStuff();
       }
       catch(err){
@@ -297,7 +309,7 @@
         let jsonData;
         try { jsonData = JSON.parse(event.data); }
         catch(err){
-          console.error("response cannot be json'ed");
+          exitRoom("Response cannot be json'ed\nPlease report this!", true);
           return;
         }
 
@@ -386,7 +398,7 @@
       editableNameEl.readOnly = true;
       
       //for other users
-      fetch("/getAllUsersPic")
+      fetch("/getAllUsersPic", { signal: AbortSignal.timeout(5000) })
       .then(res => res.json())
       .then(res => {
         for (let user in res) {
@@ -394,7 +406,8 @@
           setOtherUsersDiv({username: user, imgData: res[user]});
         }
         sendOfferToEveryone();
-      });
+      })
+      .catch(err => exitRoom(`Error when fetching user pics, please report this!\n${err}`, true));
     }
 
     function setOtherUsersDiv(inputData){
@@ -465,6 +478,7 @@
     }
 
     function exitRoom(errMsg = null, doAlert = false){ 
+      g_exitingRoom = true;
       if (errMsg){
         console.error(errMsg);
         if (doAlert) alert(errMsg);
@@ -553,10 +567,10 @@
         elToRemove.remove();
         g_userStoreSet.delete(username);
       }
-      else { console.err(`Tried to delete user ${username}`); }
+      else { console.error(`Tried to delete user ${username}`); }
     }
-    
-    window.onbeforeunload = () => {
+
+    window.onpagehide = () => {
       navigator.sendBeacon("/deleteUser", localStorage.getItem("username"));
       g_socket.close();
     };

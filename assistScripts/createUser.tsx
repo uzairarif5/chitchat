@@ -4,6 +4,7 @@ import send200 from "./send200";
 import componentsStore from "../componentsStore";
 import userInfoStore from "../userInfoStore";
 import { createUserStates, generalStates } from "../statesContainer";
+import { inDevelopment } from "..";
 
 export default function createUser(req: IncomingMessage, res: ServerResponse<IncomingMessage>) {
   try {
@@ -31,10 +32,14 @@ function onReqDataComplete(res: ServerResponse<IncomingMessage>, body: JSON) {
       else if(typeof(body.imgData) !== "string") send500JSON(res, {status: createUserStates.IMGDATA_NOT_STRING});
       else if(userInfoStore.checkUserInImgStorage(body.username)) send500JSON(res, {status: createUserStates.USERNAME_TAKEN});
       else{
-        userInfoStore.setImgData(body.username, body.imgData);
-        const token = userInfoStore.setSessionToken(body.username);
+        userInfoStore.createUser(body.username, body.imgData);
+        const token = userInfoStore.getSessionToken(body.username);
         const oneYear = 365 * 24 * 60 * 60;
-        res.setHeader('Set-Cookie', `sessionToken=${token}; Max-Age=${oneYear}; HttpOnly; Secure; SameSite=Strict`);
+        if (inDevelopment) {
+          console.log(`created user ${body.username}`);
+          res.setHeader('Set-Cookie', `sessionToken=${token}; Max-Age=${oneYear}; SameSite=Lax; Path=/`);
+        }
+        else res.setHeader('Set-Cookie', `sessionToken=${token}; Max-Age=${oneYear}; HttpOnly; Secure; SameSite=Strict; Path=/`);
         send200(
           res, 
           JSON.stringify({

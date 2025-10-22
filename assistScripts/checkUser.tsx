@@ -5,10 +5,12 @@ import userInfoStore from "../userInfoStore";
 import { generalStates, checkUserStates } from "../statesContainer";
 
 export default function checkUser(req: IncomingMessage, res: ServerResponse<IncomingMessage>) {
+  if (req.method != "POST") {
+    send500JSON(res, {status: generalStates.NOT_POST}); 
+    return;
+  }
+
   try {
-    if (req.method != "POST") throw new Error("Method has to be POST");
-    else if (!req.headers.cookie) throw new Error("Cookies is missing!");
-    
     var body = '';
     req.on('data', (data) => {
       body += data;
@@ -18,7 +20,14 @@ export default function checkUser(req: IncomingMessage, res: ServerResponse<Inco
         req.socket.destroy();
       }
     });
-    req.on('end', () => onReqDataComplete(req, res, body));
+    req.on('end', () => {
+      const username = body;
+      if (!req.headers.cookie) {
+        userInfoStore.removeUser(username); //incase user was created
+        send500JSON(res, {status: generalStates.COOKIE_ISSUE}); 
+      }
+      else onReqDataComplete(req, res, username);
+    });
 
   } 
   catch (err) {
@@ -30,17 +39,18 @@ export default function checkUser(req: IncomingMessage, res: ServerResponse<Inco
 function onReqDataComplete(req: IncomingMessage, res: ServerResponse<IncomingMessage>, username: string) {
   try {
     const cookieData = req.headers.cookie!.split("=");
-    if (cookieData[0] !== "sessionToken") 
+    if (cookieData![0] !== "sessionToken") 
       send500JSON(res, {status: checkUserStates.SESSION_TOKEN_MISSING});
     else if (!userInfoStore.checkUserInSessionStorage(username)) 
       send500JSON(res, {status: checkUserStates.USER_NOT_IN_SESSION_STORAGE});
-    else if (userInfoStore.getToken(username) === cookieData[1])
+    else if (userInfoStore.getSessionToken(username) === cookieData![1])
       send200(res, JSON.stringify({status: checkUserStates.SUCCESS}), 'text/json');
     else 
       send500JSON(res, {status: checkUserStates.SESSION_TOKEN_USERNAME_MISMATCH});
   } 
   catch (err) { 
     console.error(err); 
+    userInfoStore.removeUser(username); //incase user was created
     send500JSON(res, {status: generalStates.SERVER_ERROR});
   }
 }

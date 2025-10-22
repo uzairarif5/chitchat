@@ -6,6 +6,9 @@ This is a personal website for chatting with friends.
 
 Versioning is done by using "npm version [new-version] --git-tag-version false".
 
+update 1.3.0:
+- Added mobile support.
+
 update 1.2.0:
 - Added the option to view and change microphone.
 

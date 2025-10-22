@@ -3,6 +3,7 @@
   <head>
     <title>ChitChat Log In</title>
     <script src="https://kit.fontawesome.com/8a0b394f55.js" crossorigin="anonymous" async defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Akatab:wght@400;500;600;700;800;900&display=swap');
 
@@ -18,9 +19,10 @@
         color: var(--text-color);
         font-family: var(--main-font);
         border: none;
-        padding-top: 1px;
+        padding: 1px 15px 0px 15px;
         margin: 0;
         overflow: hidden;
+        min-width: min-content;
         
         *{
           -webkit-transition: background-color 500ms linear;
@@ -132,6 +134,21 @@
 
           &:hover, &:focus{
             background-color: #444;
+          }
+        }
+      }
+
+      @media (max-width: 650px) {
+        #inputCard {
+          margin-top: 100px !important;
+
+          #picAndForm{
+            grid-template-columns: 100% !important; 
+            grid-template-rows: auto auto;
+            
+            #inputCardForm{
+              margin-top: 20px;
+            }
           }
         }
       }
