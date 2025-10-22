@@ -284,7 +284,6 @@
       try{
         /*G_SOCKET*/ //G_SOCKET will be replaced by a line which initializes websocket.
         g_socket.addEventListener('open', event => {
-          alert("g_socket open");
           g_socket.send(JSON.stringify({status: g_wsClientToServerStates.NEW_CONNECTION, username: username}));
         });
         g_socket.addEventListener("close", () => {
@@ -343,8 +342,8 @@
     }
 
     async function showMain(){
-      await setLocalStream();
       await setMicSelection();
+      await setLocalStream();
       sendTrackToPeers();
       navigator.mediaDevices.addEventListener('devicechange', setMicSelection);
       if (window.innerWidth <= window.innerHeight) {
@@ -355,6 +354,24 @@
       const mainEl = document.getElementById("main");
       mainEl.style.opacity = "1";
       setAllUsersDiv();
+    }
+
+    async function setMicSelection() {
+      const selectionEl = document.getElementById("selectionEl");
+      selectionEl.innerHTML = "";
+      await navigator.mediaDevices.getUserMedia({audio: true});
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      let audioDevices = 0;
+      for (let device of devices) { 
+        if (device.kind === "audioinput" && device.deviceId.length) {
+          let optionEl = document.createElement("option");
+          optionEl.innerText = device.label;
+          optionEl.value = device.deviceId;
+          selectionEl.appendChild(optionEl);
+          audioDevices += 1;
+        }
+      }
+      if (!audioDevices) exitRoom("No audio input found!");
     }
     
     async function setLocalStream() {
@@ -369,23 +386,6 @@
       audioElement.srcObject = g_localStream;
       const audioTrack = g_localStream.getAudioTracks()[0];
       if (document.getElementById('muteYourself').classList.contains("selectedMuteYourself")) audioTrack.enabled = false;
-    }
-
-    async function setMicSelection() {
-      const selectionEl = document.getElementById("selectionEl");
-      selectionEl.innerHTML = "";
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      let audioDevices = 0;
-      for (let device of devices) { 
-        if (device.kind === "audioinput" && device.deviceId.length) {
-          let optionEl = document.createElement("option");
-          optionEl.innerText = device.label;
-          optionEl.value = device.deviceId;
-          selectionEl.appendChild(optionEl);
-          audioDevices += 1;
-        }
-      }
-      if (!audioDevices) exitRoom("No audio input found!");
     }
     
     function sendTrackToPeers() {

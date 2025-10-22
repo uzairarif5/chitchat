@@ -6,6 +6,9 @@ This is a personal website for chatting with friends.
 
 Versioning is done by using "npm version [new-version] --git-tag-version false".
 
+update 1.3.7:
+- Fixed overconstrained error, and removed the "websocket open" alert.
+
 update 1.3.6:
 - `g_localstream` is set before the `selectionEl`.
 - Track is sent to peers after `selectionEl` is set.
