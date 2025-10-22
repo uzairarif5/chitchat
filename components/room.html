@@ -348,6 +348,10 @@
     async function showMain(){
       await setMicSelection();
       navigator.mediaDevices.addEventListener('devicechange', setMicSelection);
+      if (window.innerWidth <= window.innerHeight) {
+        const footerEl = document.getElementById("footerSettings");
+        footerEl.style.paddingBottom = "100px";
+      }
       let mainEl = document.getElementById("main");
       mainEl.style.opacity = "1";
       setAllUsersDiv();
