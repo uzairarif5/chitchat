@@ -357,6 +357,7 @@
     async function setMicSelection(){
       const selectionEl = document.getElementById("selectionEl");
       selectionEl.innerHTML = "";
+      await navigator.mediaDevices.getUserMedia({audio: true}); 
       const devices = await navigator.mediaDevices.enumerateDevices();
       let audioDevices = 0;
       for (let device of devices) { 
