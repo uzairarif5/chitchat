@@ -121,6 +121,23 @@
             border-top: solid 3px #000;
             border-bottom: solid 3px #000;
             height: calc(100vh - 282px);
+            display: flex;
+            align-items: center;
+
+            h2{
+              font-size: 60px;
+              line-height: 70px;
+              height: 70px;
+              letter-spacing: -1px;
+              text-align: center;
+              width: 100%;
+              color: var(--text-color);
+
+              img{
+                height: 70px;
+                vertical-align: bottom;
+              }
+            }
           }
 
           #footerSettings{
@@ -177,7 +194,9 @@
         <section id="ownPicContainer">%avatarContainer%</section>
         <section id="otherPeoplePicContainer"></section>
       </section>
-      <section id="midSection"></section>
+      <section id="midSection">
+        <h2><img alt="" src="/pics/cupWhite.png"/>&nbsp;Chit Chat</h2>
+      </section>
       <section id="footerSettings">
         <button title="Mute yourself (shorcut: 'M')" id="muteYourself" type="button" onclick="toggleMuteYourself()">
           <i class="fa-solid fa-microphone-slash"></i>
@@ -289,10 +308,10 @@
         g_socket.addEventListener("close", () => {
           if (!g_exitingRoom) exitRoom("Websocket closed! If this was not intended,\nthen please report it!");
          });
-        wsMessageStuff();
         window.setTimeout(() => {
           if (g_socket.readyState !== g_socket.OPEN) exitRoom("Websocket did not open.");
         }, 3000);
+        wsMessageStuff();
       }
       catch(err){ exitRoom("Websocket issue, try again later."); }
     }
